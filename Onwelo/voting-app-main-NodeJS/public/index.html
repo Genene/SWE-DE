@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voting App</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+
+        .main-container {
+            display: flex;
+            max-width: 1200px;
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .container {
+            width: 48%;
+            padding: 20px;
+            border: 1px solid #ccc;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid black;
+        }
+
+        th,
+        td {
+            padding: 8px 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+        <div class="container">
+            <h2>Candidates</h2>
+            <table id="candidatesTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Votes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+            <h2>Add Candidate</h2>
+            <input type="text" id="candidateName" placeholder="Candidate Name">
+            <button onclick="addCandidate()">Add Candidate</button>
+
+        </div>
+
+        <div class="container">
+            <h2>Voters</h2>
+            <table id="votersTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Has Voted</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+            <h2>Add Voter</h2>
+            <input type="text" id="voterName" placeholder="Voter Name">
+            <button onclick="addVoter()">Add Voter</button>
+
+            <h2>Cast Vote</h2>
+            <select id="voterDropdown"></select>
+            <select id="candidateDropdown"></select>
+            <button onclick="castVote()">Vote</button>
+
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        function fetchAndDisplayData() {
+            $.get("/api/candidates", (data) => {
+                const candidatesTable = $("#candidatesTable tbody");
+                candidatesTable.empty();
+                data.candidates.forEach(candidate => {
+                    candidatesTable.append(`<tr><td>${candidate.name}</td><td>${candidate.votes}</td></tr>`);
+                    $("#candidateDropdown").append(`<option value="${candidate._id}">${candidate.name}</option>`);
+                });
+            });
+
+            $.get("/api/voters", (data) => {
+                const votersTable = $("#votersTable tbody");
+                votersTable.empty();
+                data.voters.forEach(voter => {
+                    votersTable.append(`<tr><td>${voter.name}</td><td>${voter.hasVoted ? 'Yes' : 'No'}</td></tr>`);
+                    if (!voter.hasVoted) {
+                        $("#voterDropdown").append(`<option value="${voter._id}">${voter.name}</option>`);
+                    }
+                });
+            });
+        }
+
+        function addCandidate() {
+            const candidateName = $("#candidateName").val();
+            $.post("/api/addCandidate", { name: candidateName }, () => {
+                fetchAndDisplayData();
+            });
+        }
+
+        function addVoter() {
+            const voterName = $("#voterName").val();
+            $.post("/api/addVoter", { name: voterName }, () => {
+                fetchAndDisplayData();
+            });
+        }
+
+        function castVote() {
+            const candidateId = $("#candidateDropdown").val();
+            const voterId = $("#voterDropdown").val();
+            $.post("/api/castVote", { candidateId: candidateId, voterId: voterId })
+                .done(data => {
+                    fetchAndDisplayData();
+                })
+                .fail(data => {
+                    alert(data.responseJSON.error)
+                    console.log(data);
+                });
+        }
+
+        // Initial Data Fetch
+        fetchAndDisplayData();    </script>
+</body>
+
+</html>
